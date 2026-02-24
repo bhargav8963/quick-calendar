@@ -1,0 +1,8 @@
+.DS_Store
+*.ics
+*.jpeg
+app.html
+CalendarApp.html
+clear.html
+test_invite.html
+quickcal/
