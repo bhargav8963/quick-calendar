@@ -691,7 +691,11 @@ function createInvite(){
   let ln=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Bhargav//QuickCalendar//EN','CALSCALE:GREGORIAN','METHOD:REQUEST',...tl,'BEGIN:VEVENT','UID:'+uid,'DTSTAMP:'+fUTC(new Date()),'DTSTART;TZID='+tz+':'+fDT(startDT),'DTEND;TZID='+tz+':'+fDT(endDT),'SUMMARY:'+title];
   if(fd)ln.push('DESCRIPTION:'+fd);if(loc)ln.push('LOCATION:'+loc);
   ln.push('ORGANIZER;CN='+getOrgName()+':mailto:'+getOrgEmail());
-  if(aEmail)ln.push('ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN='+(aName||aEmail)+':mailto:'+aEmail);
+  if(aEmail){
+    ln.push('ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN='+(aName||aEmail)+':mailto:'+aEmail);
+  }else{
+    ln.push('ATTENDEE;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=TRUE;CN=Invitee:mailto:undisclosed@quickcal.app');
+  }
   ln.push('X-MICROSOFT-CDO-BUSYSTATUS:TENTATIVE','X-MICROSOFT-CDO-INTENDEDSTATUS:BUSY');
   ln.push('TRANSP:OPAQUE','STATUS:CONFIRMED','SEQUENCE:0','BEGIN:VALARM','TRIGGER:-PT15M','ACTION:DISPLAY','DESCRIPTION:Reminder','END:VALARM','END:VEVENT','END:VCALENDAR');
 

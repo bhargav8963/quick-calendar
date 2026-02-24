@@ -21,9 +21,7 @@ function shareWhatsApp(){
   txt+='\u23F0 '+ts+' \u2013 '+te+'\n';
   if(e.meetingLink){txt+='\uD83D\uDD17 '+e.meetingLink+'\n'}
   else if(e.location==='Phone Call'){txt+='\uD83D\uDCDE Phone Call\n'}
-  txt+='\n\uD83D\uDCC6 *Add to your calendar:*\n'+gcal+'\n\n';
-  txt+='\u2709\uFE0F *RSVP:* Reply to this message with\n';
-  txt+='\u2705 Going  \u2022  \uD83E\uDD14 Maybe  \u2022  \u274C Can\'t make it';
+  txt+='\n\uD83D\uDCC6 *Add to your calendar:*\n'+gcal;
   // Mobile: try to attach ICS file
   if(navigator.share&&navigator.canShare){
     try{
