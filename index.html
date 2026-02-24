@@ -545,8 +545,20 @@ function parse(text){
     if(dm){const wm={fifteen:15,twenty:20,thirty:30,forty:40,'forty five':45,'forty-five':45,fortyfive:45,ninety:90};
       dur=wm[dm[1].toLowerCase().replace('-',' ')]||30;s=s.replace(dm[0],'').trim()}}
 
+  // --- Relative time: "after X hours" / "in X hours" ---
+  const relH=s.match(/\b(?:after|in)\s+(?:an?|(\d+(?:\.\d+)?)|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?\b/i);
+  if(relH){
+    const wn={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+    const raw=relH[1]||relH[0].match(/(?:after|in)\s+(\S+)\s+hours?/i)[1].toLowerCase();
+    const hrs=wn[raw]||parseFloat(raw)||1;
+    const future=new Date(now.getTime()+hrs*3600000);
+    dateObj=new Date(future);
+    timeH=future.getHours();timeM=future.getMinutes();
+    s=s.replace(relH[0],'').trim();
+  }
+
   // --- Time ---
-  let tm=s.match(/\b(\d{1,2})\s*:\s*(\d{2})\s*(am|pm)?\b/i)||s.match(/\b(\d{1,2})\s*(am|pm)\b/i);
+  let tm=!relH?(s.match(/\b(\d{1,2})\s*:\s*(\d{2})\s*(am|pm)?\b/i)||s.match(/\b(\d{1,2})\s*(am|pm)\b/i)):null;
   if(tm){
     timeH=parseInt(tm[1]);
     timeM=(tm[2]&&!/(am|pm)/i.test(tm[2]))?parseInt(tm[2]):0;
@@ -560,16 +572,17 @@ function parse(text){
   s=s.replace(/\./g,' ').replace(/\s{2,}/g,' ').trim();
 
   // --- Date ---
-  if(/\bday\s+after\s+tomorrow\b/i.test(s)){dateObj=addDays(now,2);s=s.replace(/\bday\s+after\s+tomorrow\b/i,'').trim()}
-  else if(/\btomorrow\b/i.test(s)){dateObj=addDays(now,1);s=s.replace(/\btomorrow\b/i,'').trim()}
-  else if(/\btoday\b/i.test(s)){dateObj=new Date(now);s=s.replace(/\btoday\b/i,'').trim()}
-  else if(/\btonight\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=19;s=s.replace(/\btonight\b/i,'').trim()}
-  else if(/\bthis\s+evening\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=18;s=s.replace(/\bthis\s+evening\b/i,'').trim()}
-  else if(/\bthis\s+morning\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=9;s=s.replace(/\bthis\s+morning\b/i,'').trim()}
-  else if(/\bthis\s+afternoon\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=14;s=s.replace(/\bthis\s+afternoon\b/i,'').trim()}
-  else if(/\bin\s+(\d+)\s+days?\b/i.test(s)){const xd=s.match(/\bin\s+(\d+)\s+days?\b/i);dateObj=addDays(now,parseInt(xd[1]));s=s.replace(xd[0],'').trim()}
-  else if(/\bnext\s+week\b/i.test(s)){dateObj=addDays(now,(8-now.getDay())%7||7);s=s.replace(/\bnext\s+week\b/i,'').trim()}
-  else{
+  // Strip "today" from text (relative time like "after 2 hours" already implies today)
+  if(/\btoday\b/i.test(s)){if(!dateObj)dateObj=new Date(now);s=s.replace(/\btoday\b/i,'').trim()}
+  if(!dateObj&&/\bday\s+after\s+tomorrow\b/i.test(s)){dateObj=addDays(now,2);s=s.replace(/\bday\s+after\s+tomorrow\b/i,'').trim()}
+  else if(!dateObj&&/\btomorrow\b/i.test(s)){dateObj=addDays(now,1);s=s.replace(/\btomorrow\b/i,'').trim()}
+  else if(!dateObj&&/\btonight\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=19;s=s.replace(/\btonight\b/i,'').trim()}
+  else if(!dateObj&&/\bthis\s+evening\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=18;s=s.replace(/\bthis\s+evening\b/i,'').trim()}
+  else if(!dateObj&&/\bthis\s+morning\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=9;s=s.replace(/\bthis\s+morning\b/i,'').trim()}
+  else if(!dateObj&&/\bthis\s+afternoon\b/i.test(s)){dateObj=new Date(now);if(timeH===null)timeH=14;s=s.replace(/\bthis\s+afternoon\b/i,'').trim()}
+  else if(!dateObj&&/\bin\s+(\d+)\s+days?\b/i.test(s)){const xd=s.match(/\bin\s+(\d+)\s+days?\b/i);dateObj=addDays(now,parseInt(xd[1]));s=s.replace(xd[0],'').trim()}
+  else if(!dateObj&&/\bnext\s+week\b/i.test(s)){dateObj=addDays(now,(8-now.getDay())%7||7);s=s.replace(/\bnext\s+week\b/i,'').trim()}
+  else if(!dateObj){
     const days=['sunday','monday','tuesday','wednesday','thursday','friday','saturday'];
     const dM=s.match(/\b(next\s+)?(this\s+)?(sunday|monday|tuesday|wednesday|thursday|friday|saturday)\b/i);
     if(dM){
@@ -599,6 +612,7 @@ function parse(text){
     .replace(/\b(this\s+)?(morning|afternoon|evening|tonight)\b/gi,'')
     .replace(/\b(next\s+week)\b/gi,'')
     .replace(/\bday\s+after\s+tomorrow\b/gi,'')
+    .replace(/\b(?:after|in)\s+(?:an?|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?\b/gi,'')
     .replace(/,\s*,/g,',').replace(/,\s*$/g,'').replace(/^\s*,/g,'')
     .replace(/\b(at|on|for|via)\s*,/gi,',')
     .replace(/,\s*,+/g,'').replace(/,\s*$/g,'').replace(/\s{2,}/g,' ')
@@ -708,10 +722,8 @@ function createInvite(){
   lastFn=`${sn}_${dateVal.replace(/-/g,'')}.ics`;
   lastEv={title,startDT,endDT,location:loc,description:dp.join('\n'),timezone:tz,meetingLink:mLink};
 
-  const u=URL.createObjectURL(lastBlob);const a=document.createElement('a');a.href=u;a.download=lastFn;document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(u);
-
   const msg=document.getElementById('successMsg');
-  msg.innerHTML='<svg class="check-circle" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path class="check-mark" d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Invite created! Download started.';
+  msg.innerHTML='<svg class="check-circle" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/><path class="check-mark" d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg> Invite ready! Share it below.';
   msg.classList.add('vis');
 
   hide('btnCreate');
