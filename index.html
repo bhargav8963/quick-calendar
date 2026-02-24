@@ -528,19 +528,20 @@ function parse(text){
   let s=text.trim(),title='',dateObj=null,timeH=null,timeM=0,dur=getDefDur(),mtype='none',link='';
 
   // --- Meeting type (zoom/teams first, then phone call) ---
-  if(/\bzoom\s*(call|meeting|chat)?\b/i.test(s)){mtype='zoom';link=getZoomLink();s=s.replace(/\b(via|on|over|with|for)?\s*zoom\s*(call|meeting|chat)?\b/i,'').trim()}
-  else if(/\bgoogle\s*meet\b/i.test(s)){mtype='meet';link=getMeetLink();s=s.replace(/\b(via|on|over|with|for)?\s*google\s*meet\s*(call|meeting|chat)?\b/i,'').trim()}
-  else if(/\bmeet\s+(call|meeting)\b/i.test(s)){mtype='meet';link=getMeetLink();s=s.replace(/\b(via|on|over|with|for)?\s*meet\s+(call|meeting)\b/i,'').trim()}
-  else if(/\bteams\s*(call|meeting|chat)?\b/i.test(s)){mtype='teams';s=s.replace(/\b(via|on|over|with|for)?\s*teams\s*(call|meeting|chat)?\b/i,'').trim()}
-  else if(/\bphone\s*call\b/i.test(s)){mtype='call';s=s.replace(/\bphone\s*call\b/i,'').trim()}
-  else if(/\b(via|on|over)\s+call\b/i.test(s)||/\bcall$/i.test(s.trim())){mtype='call';s=s.replace(/\b(via|on|over)\s+call\b/i,'').replace(/\bcall$/i,'').trim()}
+  // Note: (?:via|on|over|with|for)?\s*(?:an?\s+)? handles "on a Zoom call", "via Teams", etc.
+  if(/\bzoom\s*(call|meeting|chat)?\b/i.test(s)){mtype='zoom';link=getZoomLink();s=s.replace(/\b(?:via|on|over|with|for)?\s*(?:an?\s+)?zoom\s*(call|meeting|chat)?\b/i,'').trim()}
+  else if(/\bgoogle\s*meet\b/i.test(s)){mtype='meet';link=getMeetLink();s=s.replace(/\b(?:via|on|over|with|for)?\s*(?:an?\s+)?google\s*meet\s*(call|meeting|chat)?\b/i,'').trim()}
+  else if(/\bmeet\s+(call|meeting)\b/i.test(s)){mtype='meet';link=getMeetLink();s=s.replace(/\b(?:via|on|over|with|for)?\s*(?:an?\s+)?meet\s+(call|meeting)\b/i,'').trim()}
+  else if(/\bteams\s*(call|meeting|chat)?\b/i.test(s)){mtype='teams';s=s.replace(/\b(?:via|on|over|with|for)?\s*(?:an?\s+)?teams\s*(call|meeting|chat)?\b/i,'').trim()}
+  else if(/\bphone\s*call\b/i.test(s)){mtype='call';s=s.replace(/\b(?:an?\s+)?phone\s*call\b/i,'').trim()}
+  else if(/\b(via|on|over)\s+(?:an?\s+)?call\b/i.test(s)||/\bcall$/i.test(s.trim())){mtype='call';s=s.replace(/\b(?:via|on|over)\s+(?:an?\s+)?call\b/i,'').replace(/\bcall$/i,'').trim()}
 
   // URLs
   const um=s.match(/(https?:\/\/[^\s]+)/i);
   if(um){link=um[1];if(/zoom/i.test(link))mtype='zoom';else if(/meet\.google/i.test(link))mtype='meet';else if(/teams/i.test(link))mtype='teams';else mtype='custom';s=s.replace(um[0],'').trim()}
 
   // --- Relative time: "after/in X hours [from now]" (must run BEFORE duration) ---
-  const relH=s.match(/\b(?:after|in)\s+(?:an?|(\d+(?:\.\d+)?)|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?(?:\s+from\s+now)?/i);
+  const relH=s.match(/\b(?:after|in)\s+(?:an?|(\d+(?:\.\d+)?)|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?\b(?:\s+from\s+now)?/i);
   if(relH){
     const wn={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
     const raw=relH[1]||relH[0].match(/(?:after|in)\s+(\S+)\s+hours?/i)[1].toLowerCase();
@@ -551,10 +552,10 @@ function parse(text){
     s=s.replace(relH[0],'').trim();
   }
   // Also: "in X minutes from now"
-  const relM=!relH?s.match(/\b(?:after|in)\s+(?:(\d+)|fifteen|twenty|thirty|forty|forty[- ]?five|ninety)\s+(?:min|mins|minutes)(?:\s+from\s+now)?/i):null;
+  const relM=!relH?s.match(/\b(?:after|in)\s+(?:(\d+)|fifteen|twenty|thirty|forty|forty[- ]?five|ninety)\s+(?:minutes|mins|min)\b(?:\s+from\s+now)?/i):null;
   if(relM){
     const wm={fifteen:15,twenty:20,thirty:30,forty:40,'forty five':45,'forty-five':45,fortyfive:45,ninety:90};
-    const raw=relM[1]||relM[0].match(/(?:after|in)\s+(\S+)\s+(?:min|mins|minutes)/i)[1].toLowerCase();
+    const raw=relM[1]||relM[0].match(/(?:after|in)\s+(\S+)\s+(?:minutes|mins|min)/i)[1].toLowerCase();
     const mins=parseInt(raw)||wm[raw.replace('-',' ')]||30;
     const future=new Date(now.getTime()+mins*60000);
     dateObj=new Date(future);
@@ -583,9 +584,9 @@ function parse(text){
   if(!dm){dm=s.match(/\b(?:for\s+)?(one|two|three|four|five|six|seven|eight|nine|ten)\s*(?:hr|hrs|hour|hours)\b/i);
     if(dm){dur=(wordNums[dm[1].toLowerCase()]||1)*60;s=s.replace(dm[0],'').trim()}}
 
-  if(!dm){dm=s.match(/\b(?:for\s+)?(\d+)\s*(?:min|mins|minutes|m)\b/i);
+  if(!dm){dm=s.match(/\b(?:for\s+)?(\d+)\s*(?:minutes|mins|min|m)\b/i);
     if(dm){dur=parseInt(dm[1]);s=s.replace(dm[0],'').trim()}}
-  if(!dm){dm=s.match(/\b(?:for\s+)?(fifteen|twenty|thirty|forty|forty[- ]?five|ninety)\s*(?:min|mins|minutes)?\b/i);
+  if(!dm){dm=s.match(/\b(?:for\s+)?(fifteen|twenty|thirty|forty|forty[- ]?five|ninety)\s*(?:minutes|mins|min)?\b/i);
     if(dm){const wm={fifteen:15,twenty:20,thirty:30,forty:40,'forty five':45,'forty-five':45,fortyfive:45,ninety:90};
       dur=wm[dm[1].toLowerCase().replace('-',' ')]||30;s=s.replace(dm[0],'').trim()}}
 
@@ -638,21 +639,21 @@ function parse(text){
   if(timeH===null)timeH=10;
 
   // --- Title ---
-  // Clean up any leftover date/time words that might remain (including concatenated like "tomorrowfor")
+  // Clean up any leftover date/time words that might remain
   title=s
     .replace(/\b(tomorrow|today|tonight|yesterday)(for|at|on)?\b/gi,'')
     .replace(/\b(this\s+)?(morning|afternoon|evening|tonight)\b/gi,'')
     .replace(/\b(next\s+week)\b/gi,'')
     .replace(/\bday\s+after\s+tomorrow\b/gi,'')
-    .replace(/\b(?:after|in)\s+(?:an?|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:hours?|mins?|minutes?)(?:\s+from\s+now)?\b/gi,'')
+    .replace(/\b(?:after|in)\s+(?:an?|\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:hours?|minutes|mins|min)\b(?:\s+from\s+now)?\b/gi,'')
     .replace(/\bfrom\s+now\b/gi,'')
     .replace(/,\s*,/g,',').replace(/,\s*$/g,'').replace(/^\s*,/g,'')
     .replace(/\b(at|on|for|via)\s*,/gi,',')
     .replace(/,\s*,+/g,'').replace(/,\s*$/g,'').replace(/\s{2,}/g,' ')
     .replace(/^[\s,.\-]+|[\s,.\-]+$/g,'').trim();
-  // Strip trailing prepositions repeatedly (handles "at for", "on at", etc.)
+  // Strip trailing prepositions, articles, and filler words repeatedly
   let prev='';
-  while(title!==prev){prev=title;title=title.replace(/\s+(at|on|for|via|from)\s*$/i,'').trim()}
+  while(title!==prev){prev=title;title=title.replace(/\s+(at|on|for|via|from|a|an|the|and|or|with)\s*$/i,'').trim()}
   if(!title)title='Meeting';
   title=title.charAt(0).toUpperCase()+title.slice(1);
 
