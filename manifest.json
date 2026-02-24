@@ -2,11 +2,14 @@
   "name": "Quick Calendar",
   "short_name": "QuickCal",
   "description": "Create & share calendar invites with natural language",
+  "id": "/quick-calendar/",
   "start_url": "./index.html",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#F8FAFC",
   "theme_color": "#4F46E5",
   "orientation": "portrait",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "icon-192.png",

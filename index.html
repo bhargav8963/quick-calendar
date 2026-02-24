@@ -518,6 +518,18 @@ function parse(text){
   const um=s.match(/(https?:\/\/[^\s]+)/i);
   if(um){link=um[1];if(/zoom/i.test(link))mtype='zoom';else if(/meet\.google/i.test(link))mtype='meet';else if(/teams/i.test(link))mtype='teams';else mtype='custom';s=s.replace(um[0],'').trim()}
 
+  // --- Relative time: "after X hours" / "in X hours" (must run BEFORE duration) ---
+  const relH=s.match(/\b(?:after|in)\s+(?:an?|(\d+(?:\.\d+)?)|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?\b/i);
+  if(relH){
+    const wn={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
+    const raw=relH[1]||relH[0].match(/(?:after|in)\s+(\S+)\s+hours?/i)[1].toLowerCase();
+    const hrs=wn[raw]||parseFloat(raw)||1;
+    const future=new Date(now.getTime()+hrs*3600000);
+    dateObj=new Date(future);
+    timeH=future.getHours();timeM=future.getMinutes();
+    s=s.replace(relH[0],'').trim();
+  }
+
   // --- Duration (conversational) ---
   const wordNums={one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,
     couple:2,few:3,half:0.5,quarter:0.25};
@@ -544,18 +556,6 @@ function parse(text){
   if(!dm){dm=s.match(/\b(?:for\s+)?(fifteen|twenty|thirty|forty|forty[- ]?five|ninety)\s*(?:min|mins|minutes)?\b/i);
     if(dm){const wm={fifteen:15,twenty:20,thirty:30,forty:40,'forty five':45,'forty-five':45,fortyfive:45,ninety:90};
       dur=wm[dm[1].toLowerCase().replace('-',' ')]||30;s=s.replace(dm[0],'').trim()}}
-
-  // --- Relative time: "after X hours" / "in X hours" ---
-  const relH=s.match(/\b(?:after|in)\s+(?:an?|(\d+(?:\.\d+)?)|one|two|three|four|five|six|seven|eight|nine|ten)\s+hours?\b/i);
-  if(relH){
-    const wn={a:1,an:1,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10};
-    const raw=relH[1]||relH[0].match(/(?:after|in)\s+(\S+)\s+hours?/i)[1].toLowerCase();
-    const hrs=wn[raw]||parseFloat(raw)||1;
-    const future=new Date(now.getTime()+hrs*3600000);
-    dateObj=new Date(future);
-    timeH=future.getHours();timeM=future.getMinutes();
-    s=s.replace(relH[0],'').trim();
-  }
 
   // --- Time ---
   let tm=!relH?(s.match(/\b(\d{1,2})\s*:\s*(\d{2})\s*(am|pm)?\b/i)||s.match(/\b(\d{1,2})\s*(am|pm)\b/i)):null;

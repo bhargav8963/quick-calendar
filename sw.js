@@ -1,4 +1,4 @@
-const CACHE='quickcal-v4';
+const CACHE='quickcal-v5';
 const ASSETS=['./','./index.html','./invite.js','./manifest.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
@@ -13,8 +13,13 @@ self.addEventListener('activate',e=>{
   );
 });
 
+// Network-first: always try network, fall back to cache for offline use
 self.addEventListener('fetch',e=>{
   e.respondWith(
-    caches.match(e.request).then(r=>r||fetch(e.request))
+    fetch(e.request).then(r=>{
+      const clone=r.clone();
+      caches.open(CACHE).then(c=>c.put(e.request,clone));
+      return r;
+    }).catch(()=>caches.match(e.request))
   );
 });
