@@ -1,4 +1,4 @@
-const CACHE='quickcal-v1';
+const CACHE='quickcal-v2';
 const ASSETS=['./','./index.html','./invite.js','./manifest.json','./icon-192.png','./icon-512.png'];
 
 self.addEventListener('install',e=>{
