@@ -832,15 +832,7 @@ function doSendEmail(){
   if(e.meetingLink)body+='Join: '+e.meetingLink+'\n';
   else if(e.location==='Phone Call')body+='Phone Call\n';
   body+='\nAdd to your calendar:\n'+buildGCalUrl();
-  // Try native share with .ics attachment first (works on mobile)
-  if(navigator.share&&navigator.canShare){
-    try{
-      const icsFile=new File([lastBlob],lastFn,{type:'text/calendar'});
-      const data={title:e.title,text:body,files:[icsFile]};
-      if(navigator.canShare(data)){navigator.share(data).catch(()=>{});return}
-    }catch(ex){}
-  }
-  // Fallback: open mailto link
+  // Open mailto with recipient pre-filled
   window.location.href='mailto:'+encodeURIComponent(email)+'?subject='+encodeURIComponent('Meeting Invite: '+e.title)+'&body='+encodeURIComponent(body);
   document.getElementById('emailPrompt').classList.remove('vis');
 }
